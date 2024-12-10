@@ -23,13 +23,13 @@ class OpinionAgent(mesa.Agent):
         - model: Model the agent is part of
         - initial_opinion: Starting opinion (random if None)
         """
-        super().__init__(unique_id, model)
+        super().__init__(model)
         # Initialize opinion randomly between -1 and 1 if not provided
         self.opinion = initial_opinion if initial_opinion is not None else np.random.uniform(-1, 1)
     
     def step(self):
         # Randomly select another agent in the model
-        other_agent = self.random.choice(self.model.schedule.agents)
+        other_agent = self.random.choice(self.model.agents)
         
         # Check if opinion proximity is within margins for interaction
         if other_agent != self and abs(self.opinion - other_agent.opinion) <= self.model.tau:
@@ -48,24 +48,26 @@ class OpinionDynamicsModel(mesa.Model):
         - tau: Threshold for opinion difference to trigger interaction (x > 0)
         - mu: Adjustment parameter for opinion change (0 < x <= 0.5)
         """
+        super().__init__(seed=seed)
+        
         # Model parameters
         self.num_agents = N
         self.tau = tau
         self.mu = mu
         self.random = Random(seed)
+        
         # Track opinion history for analysis and graphical display
         self.opinion_history = []
 
-        # Create agents and add to schedule
+        # Create agents
         for i in range(self.num_agents):
-            agent = OpinionAgent(i, self)
-            self.schedule.add(agent)
+            agent = OpinionAgent(unique_id=i, model=self)
         
         # Datacollector for tracking model-level data
         self.datacollector = mesa.DataCollector(
             model_reporters={
-                "MeanOpinion": lambda m: np.mean([a.opinion for a in m.schedule.agents]),
-                "OpinionStdDev": lambda m: np.std([a.opinion for a in m.schedule.agents]),
+                "MeanOpinion": lambda m: np.mean([a.opinion for a in m.agents]),
+                "OpinionStdDev": lambda m: np.std([a.opinion for a in m.agents]),
                 "NumClusters": self.count_clusters
             }
         )
@@ -81,7 +83,7 @@ class OpinionDynamicsModel(mesa.Model):
         - Number of clusters
         """
         # Get all agent opinions
-        opinions = [agent.opinion for agent in self.schedule.agents]
+        opinions = [agent.opinion for agent in self.agents]
         # Track assigned agents
         assigned = set()
         clusters = 0
@@ -99,12 +101,12 @@ class OpinionDynamicsModel(mesa.Model):
         return clusters
     
     def step(self):     # Advance the model by one step
-        # Take a step in the schedule (activates all agents)
+        # Take a step (activates all agents)
         self.agents.shuffle_do("step")
         # Collect data for this step
         self.datacollector.collect(self)
         # Track opinion history
-        self.opinion_history.append([agent.opinion for agent in self.schedule.agents])
+        self.opinion_history.append([agent.opinion for agent in self.agents])
     
     def run_simulation(self, steps=CONFIG["steps"]):
         for _ in range(steps):

@@ -4,12 +4,12 @@ import mesa
 import matplotlib.pyplot as plt
 
 CONFIG = {
-    "N": 100,              # Number of agents
+    "N": 200,              # Number of agents
     "tau": 0.2,             # Threshold for opinion difference to interact
     "mu": 0.2,              # Adjustment parameter for opinion change
     "steps": 2000,         # Number of simulation steps
     "seed": 42,           # Random seed for reproducibility
-    "threshold": 0.1        # Proximity of opinions to count to the same cluster
+    "threshold": 0.5        # Proximity of opinions to count to the same cluster
 }
 
 class OpinionAgent(mesa.Agent):
@@ -101,11 +101,14 @@ class OpinionDynamicsModel(mesa.Model):
     def step(self):     # Advance the model by one step
         self.current_step += 1
         
+        # Calculate percentage of comparisons completed
+        percentage_done = (self.current_step / CONFIG["steps"]) * 100
+        
         # Select two random agents
         agent1, agent2 = self.random.sample(list(self.agents), 2)
        
         # Print comparison message
-        print(f"Comparison {self.current_step}/{CONFIG['steps']}: comparing agent {agent1.unique_id} with agent {agent2.unique_id}")
+        print(f"{percentage_done:.0f}% ({self.current_step}/{CONFIG['steps']}): comparing agent {agent1.unique_id} with agent {agent2.unique_id}")
         
         # Check if opinion proximity is within margins for interaction
         if abs(agent1.opinion - agent2.opinion) <= self.tau:

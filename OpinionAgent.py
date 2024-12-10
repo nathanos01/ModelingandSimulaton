@@ -4,10 +4,10 @@ import mesa
 import matplotlib.pyplot as plt
 
 CONFIG = {
-    "N": 1000,              # Number of agents
+    "N": 10,              # Number of agents
     "tau": 0.5,             # Threshold for opinion difference to interact
     "mu": 0.3,              # Adjustment parameter for opinion change
-    "steps": 20000,         # Number of simulation steps
+    "steps": 200,         # Number of simulation steps
     "seed": 4242,           # Random seed for reproducibility
     "threshold": 0.1        # Proximity of opinions to count to the same cluster
 }
@@ -62,6 +62,7 @@ class OpinionDynamicsModel(mesa.Model):
         # Create agents
         for i in range(self.num_agents):
             agent = OpinionAgent(unique_id=i, model=self)
+            self.agents.add(agent) # Adds agents to the list
         
         # Datacollector for tracking model-level data
         self.datacollector = mesa.DataCollector(
@@ -101,8 +102,11 @@ class OpinionDynamicsModel(mesa.Model):
         return clusters
     
     def step(self):     # Advance the model by one step
-        # Take a step (activates all agents)
-        self.agents.shuffle_do("step")
+        self.agents.shuffle()
+        # Call the `step` method of each agent
+        #for agent in self.agents:
+         #   agent.step()
+            
         # Collect data for this step
         self.datacollector.collect(self)
         # Track opinion history

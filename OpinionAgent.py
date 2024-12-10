@@ -4,10 +4,10 @@ import mesa
 import matplotlib.pyplot as plt
 
 CONFIG = {
-    "N": 100,              # Number of agents
+    "N": 50,              # Number of agents
     "tau": 0.5,             # Threshold for opinion difference to interact
     "mu": 0.3,              # Adjustment parameter for opinion change
-    "steps": 2000,         # Number of simulation steps
+    "steps": 1000,         # Number of simulation steps
     "seed": 42,           # Random seed for reproducibility
     "threshold": 0.1        # Proximity of opinions to count to the same cluster
 }
@@ -34,16 +34,14 @@ class OpinionAgent(mesa.Agent):
     def step(self):
         # Randomly select another agent in the model
         other_agent = self.random.choice(list(self.model.agents))
-        print(f"Main Agent: {self.unique_id}")
-        print(f"Other agent: {other_agent.unique_id}")
+        
+        # Print the terminal message
+        print(f"Comparison {self.model.current_step}/{CONFIG['steps']}: comparing agent {self.unique_id} with agent {other_agent.unique_id}")
         
         # Check if opinion proximity is within margins for interaction
         if other_agent != self and abs(self.opinion - other_agent.opinion) <= self.model.tau:
-            print(f"Opinions before adjustment: {self.opinion:.3f}, {other_agent.opinion:.3f}")
             self.opinion += self.model.mu * (other_agent.opinion - self.opinion)
             other_agent.opinion += self.model.mu * (self.opinion - other_agent.opinion)
-            print(f"Opinions after adjustment: {self.opinion:.3f}, {other_agent.opinion:.3f}")
-
 
 class OpinionDynamicsModel(mesa.Model):
 
@@ -63,6 +61,9 @@ class OpinionDynamicsModel(mesa.Model):
         self.tau = tau
         self.mu = mu
         self.random = Random(seed)
+        
+        # Step counter
+        self.current_step = 0
         
         # Track opinion history for analysis and graphical display
         self.opinion_history = []
@@ -119,6 +120,9 @@ class OpinionDynamicsModel(mesa.Model):
         self.datacollector.collect(self)
         # Track opinion history
         self.opinion_history.append([agent.opinion for agent in self.agents])
+    
+        # Increment step counter
+        self.current_step += 1
     
     def run_simulation(self, steps=CONFIG["steps"]):
         for _ in range(steps):

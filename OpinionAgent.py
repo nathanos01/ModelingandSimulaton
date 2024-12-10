@@ -4,11 +4,11 @@ import mesa
 import matplotlib.pyplot as plt
 
 CONFIG = {
-    "N": 10,              # Number of agents
+    "N": 100,              # Number of agents
     "tau": 0.5,             # Threshold for opinion difference to interact
     "mu": 0.3,              # Adjustment parameter for opinion change
-    "steps": 200,         # Number of simulation steps
-    "seed": 4242,           # Random seed for reproducibility
+    "steps": 2000,         # Number of simulation steps
+    "seed": 42,           # Random seed for reproducibility
     "threshold": 0.1        # Proximity of opinions to count to the same cluster
 }
 
@@ -24,18 +24,26 @@ class OpinionAgent(mesa.Agent):
         - initial_opinion: Starting opinion (random if None)
         """
         super().__init__(model)
-        # Initialize opinion randomly between -1 and 1 if not provided
-        self.opinion = initial_opinion if initial_opinion is not None else np.random.uniform(-1, 1)
+        # Initialize opinion randomly (with the seed) between -1 and 1 if not provided
+        self.opinion = (
+            initial_opinion
+            if initial_opinion is not None
+            else self.model.random.uniform(-1, 1)
+        )
     
     def step(self):
         # Randomly select another agent in the model
-        other_agent = self.random.choice(self.model.agents)
+        other_agent = self.random.choice(list(self.model.agents))
+        print(f"Main Agent: {self.unique_id}")
+        print(f"Other agent: {other_agent.unique_id}")
         
         # Check if opinion proximity is within margins for interaction
         if other_agent != self and abs(self.opinion - other_agent.opinion) <= self.model.tau:
-            # Adjust opinions
+            print(f"Opinions before adjustment: {self.opinion:.3f}, {other_agent.opinion:.3f}")
             self.opinion += self.model.mu * (other_agent.opinion - self.opinion)
             other_agent.opinion += self.model.mu * (self.opinion - other_agent.opinion)
+            print(f"Opinions after adjustment: {self.opinion:.3f}, {other_agent.opinion:.3f}")
+
 
 class OpinionDynamicsModel(mesa.Model):
 
@@ -103,10 +111,10 @@ class OpinionDynamicsModel(mesa.Model):
     
     def step(self):     # Advance the model by one step
         self.agents.shuffle()
-        # Call the `step` method of each agent
-        #for agent in self.agents:
-         #   agent.step()
-            
+         # Activate each agent's step method
+        for agent in self.agents:
+            agent.step()
+        
         # Collect data for this step
         self.datacollector.collect(self)
         # Track opinion history
@@ -161,6 +169,8 @@ def plot_results(model):
     plt.show()
 
 def main():
+    print(f"Mesa version: {mesa.__version__}")
+    
     # Create and run the model
     model = OpinionDynamicsModel()
     model.run_simulation()

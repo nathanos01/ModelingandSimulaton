@@ -4,10 +4,10 @@ import mesa
 import matplotlib.pyplot as plt
 
 CONFIG = {
-    "N": 50,              # Number of agents
-    "tau": 0.5,             # Threshold for opinion difference to interact
-    "mu": 0.3,              # Adjustment parameter for opinion change
-    "steps": 1000,         # Number of simulation steps
+    "N": 100,              # Number of agents
+    "tau": 0.2,             # Threshold for opinion difference to interact
+    "mu": 0.2,              # Adjustment parameter for opinion change
+    "steps": 2000,         # Number of simulation steps
     "seed": 42,           # Random seed for reproducibility
     "threshold": 0.1        # Proximity of opinions to count to the same cluster
 }
@@ -30,18 +30,6 @@ class OpinionAgent(mesa.Agent):
             if initial_opinion is not None
             else self.model.random.uniform(-1, 1)
         )
-    
-    def step(self):
-        # Randomly select another agent in the model
-        other_agent = self.random.choice(list(self.model.agents))
-        
-        # Print the terminal message
-        print(f"Comparison {self.model.current_step}/{CONFIG['steps']}: comparing agent {self.unique_id} with agent {other_agent.unique_id}")
-        
-        # Check if opinion proximity is within margins for interaction
-        if other_agent != self and abs(self.opinion - other_agent.opinion) <= self.model.tau:
-            self.opinion += self.model.mu * (other_agent.opinion - self.opinion)
-            other_agent.opinion += self.model.mu * (self.opinion - other_agent.opinion)
 
 class OpinionDynamicsModel(mesa.Model):
 
@@ -111,18 +99,24 @@ class OpinionDynamicsModel(mesa.Model):
         return clusters
     
     def step(self):     # Advance the model by one step
-        self.agents.shuffle()
-         # Activate each agent's step method
-        for agent in self.agents:
-            agent.step()
+        self.current_step += 1
+        
+        # Select two random agents
+        agent1, agent2 = self.random.sample(list(self.agents), 2)
+       
+        # Print comparison message
+        print(f"Comparison {self.current_step}/{CONFIG['steps']}: comparing agent {agent1.unique_id} with agent {agent2.unique_id}")
+        
+        # Check if opinion proximity is within margins for interaction
+        if abs(agent1.opinion - agent2.opinion) <= self.tau:
+            agent1.opinion += self.mu * (agent2.opinion - agent1.opinion)
+            agent2.opinion += self.mu * (agent1.opinion - agent2.opinion)
         
         # Collect data for this step
         self.datacollector.collect(self)
         # Track opinion history
         self.opinion_history.append([agent.opinion for agent in self.agents])
     
-        # Increment step counter
-        self.current_step += 1
     
     def run_simulation(self, steps=CONFIG["steps"]):
         for _ in range(steps):

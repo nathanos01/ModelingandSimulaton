@@ -4,12 +4,12 @@ import mesa
 import matplotlib.pyplot as plt
 
 CONFIG = {
-    "N": 200,              # Number of agents
-    "tau": 0.2,             # Threshold for opinion difference to interact
-    "mu": 0.2,              # Adjustment parameter for opinion change
-    "steps": 2000,         # Number of simulation steps
-    "seed": 42,           # Random seed for reproducibility
-    "threshold": 0.5        # Proximity of opinions to count to the same cluster
+    "N": 100,               # Number of agents
+    "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
+    "mu": 0.5,              # Adjustment parameter for opinion change [0<x<=0.5]
+    "steps": 2000,          # Number of simulation steps
+    "seed": 4651482,        # Seed for reproducibility
+    "threshold": 0.3        # Proximity of opinions to count to the same cluster
 }
 
 class OpinionAgent(mesa.Agent):

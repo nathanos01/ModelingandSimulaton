@@ -13,7 +13,7 @@ CONFIG = {
     "threshold": 0.3,        # Proximity of opinions to count to the same cluster
 
     # Calculation methode dependent parameters
-    "mode": "sweep",        # Insert "sweep" for parameter sweep, "single" for a single simulation
+    "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation
     # If mode = single
     "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
     "mu": 0.5,              # Adjustment parameter for opinion change [0<x<=0.5]
@@ -171,7 +171,7 @@ def parameter_sweep(tau_values, mu_values, steps=CONFIG["steps"], N=CONFIG["N"],
     results = []
 
     for tau, mu in itertools.product(tau_values, mu_values):
-        print(f"Running simulation for tau={tau}, mu={mu}")
+        print(f"Running sweep for tau={tau}, mu={mu}")
 
         # Create and run the model
         model = OpinionDynamicsModel(N=N, tau=tau, mu=mu, seed=seed)

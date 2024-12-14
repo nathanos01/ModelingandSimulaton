@@ -9,7 +9,7 @@ import pandas as pd
 CONFIG = {
     "N": 100,               # Number of agents
     "steps": 2000,          # Number of simulation steps
-    "seed": 4651482,        # Seed for reproducibility
+    "seed": 1482,        # Seed for reproducibility
     "threshold": 0.3,        # Proximity of opinions to count to the same cluster
 
     # Calculation methode dependent parameters
@@ -106,8 +106,8 @@ class OpinionDynamicsModel(mesa.Model):
         agent1, agent2 = self.random.sample(list(self.agents), 2)
 
         # Calculate percentage of comparisons completed and display comparison message
-        percentage_done = (self.current_step / CONFIG["steps"]) * 100
-        print(f"{percentage_done:.0f}% ({self.current_step}/{CONFIG['steps']}): comparing agent {agent1.unique_id} with agent {agent2.unique_id}")
+        #percentage_done = (self.current_step / CONFIG["steps"]) * 100
+        #print(f"{percentage_done:.0f}% ({self.current_step}/{CONFIG['steps']}): comparing agent {agent1.unique_id} with agent {agent2.unique_id}")
 
         if abs(agent1.opinion - agent2.opinion) <= self.tau:
             # Update opinions based on the interaction
@@ -117,7 +117,6 @@ class OpinionDynamicsModel(mesa.Model):
         # Collect data for this step and track opinion history
         self.datacollector.collect(self)
         self.opinion_history.append([agent.opinion for agent in self.agents])
-    
     
     def run_simulation(self, steps=CONFIG["steps"]):
         for _ in range(steps):
@@ -220,9 +219,10 @@ def main():
     if CONFIG["mode"] == "sweep":
         # Perform parameter sweep
         sweep_results = parameter_sweep(CONFIG["tau_values"], CONFIG["mu_values"])
-        print(sweep_results)
+        #print(sweep_results)
         # Save results to CSV
         sweep_results.to_csv(os.path.join(os.path.dirname(__file__), "parameter_sweep_results.csv"), index=False)
+        print(f"The results of the parameter sweep are saved in the same folder as this file")
 
     elif CONFIG["mode"] == "single":
         # Run a single simulation

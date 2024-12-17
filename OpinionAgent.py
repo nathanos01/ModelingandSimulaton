@@ -10,7 +10,7 @@ CONFIG = {
     "N": 100,               # Number of agents
     "steps": 2000,          # Number of simulation steps
     "seed": 12345,        # Seed for reproducibility
-    "threshold": 0.3,        # Proximity of opinions to count to the same cluster
+    "threshold": 0.1,        # Proximity of opinions to count to the same cluster [we agreed on 0.1]
 
     # Calculation methode dependent parameters
     "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation

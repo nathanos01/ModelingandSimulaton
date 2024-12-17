@@ -2,6 +2,7 @@ import os
 import numpy as np
 from random import Random
 import mesa
+from mesa.visualization.modules import CanvasGrid
 import matplotlib.pyplot as plt
 import itertools
 import pandas as pd
@@ -13,7 +14,7 @@ CONFIG = {
     "threshold": 0.3,        # Proximity of opinions to count to the same cluster
 
     # Calculation methode dependent parameters
-    "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation
+    "mode": "sweep",        # "sweep" for parameter sweep, "single" for a single simulation
     # If mode = single
     "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
     "mu": 0.5,              # Adjustment parameter for opinion change [0<x<=0.5]

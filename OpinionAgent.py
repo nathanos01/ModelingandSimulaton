@@ -2,7 +2,6 @@ import os
 import numpy as np
 from random import Random
 import mesa
-from mesa.visualization.modules import CanvasGrid
 import matplotlib.pyplot as plt
 import itertools
 import pandas as pd
@@ -10,11 +9,11 @@ import pandas as pd
 CONFIG = {
     "N": 100,               # Number of agents
     "steps": 2000,          # Number of simulation steps
-    "seed": 1482,        # Seed for reproducibility
+    "seed": 12345,        # Seed for reproducibility
     "threshold": 0.3,        # Proximity of opinions to count to the same cluster
 
     # Calculation methode dependent parameters
-    "mode": "sweep",        # "sweep" for parameter sweep, "single" for a single simulation
+    "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation
     # If mode = single
     "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
     "mu": 0.5,              # Adjustment parameter for opinion change [0<x<=0.5]
@@ -71,7 +70,6 @@ class OpinionDynamicsModel(mesa.Model):
         # Datacollector for tracking model-level data
         self.datacollector = mesa.DataCollector(
             model_reporters={
-                "MeanOpinion": lambda m: np.mean([a.opinion for a in m.agents]),
                 "OpinionStdDev": lambda m: np.std([a.opinion for a in m.agents]),
                 "NumClusters": self.count_clusters
             }
@@ -150,10 +148,10 @@ def plot_results(model):
     ax2.set_ylabel('Opinion')
     
     # 3. Mean Opinion Over Time
-    ax3.plot(model_data['MeanOpinion'])
-    ax3.set_title('Mean Opinion Over Time')
+    ax3.plot(model_data['OpinionStdDev'])
+    ax3.set_title('Standart Deviation Over Time')
     ax3.set_xlabel('Time Steps')
-    ax3.set_ylabel('Mean Opinion')
+    ax3.set_ylabel('Standart Deviation')
     
     # 4. Number of Clusters Over Time
     ax4.plot(model_data['NumClusters'])

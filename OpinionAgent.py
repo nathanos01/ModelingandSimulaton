@@ -4,6 +4,7 @@ from random import Random
 import mesa
 import matplotlib.pyplot as plt
 import itertools
+import seaborn as sns
 import pandas as pd
 
 CONFIG = {
@@ -13,7 +14,7 @@ CONFIG = {
     "threshold": 0.1,        # Proximity of opinions to count to the same cluster [we agreed on 0.1]
 
     # Calculation methode dependent parameters
-    "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation
+    "mode": "sweep",        # "sweep" for parameter sweep, "single" for a single simulation
     # If mode = single
     "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
     "mu": 0.5,              # Adjustment parameter for opinion change [0<x<=0.5]
@@ -197,6 +198,31 @@ def parameter_sweep(tau_values, mu_values, steps=CONFIG["steps"], N=CONFIG["N"],
             "num_clusters": num_clusters,
             "cluster_centers": cluster_centers
         })
+
+    # Reshape results for heatmap
+    num_tau = len(tau_values)
+    num_mu = len(mu_values)
+    cluster_matrix = np.zeros((num_mu, num_tau))  # Create a matrix to store cluster counts
+
+    for i, tau in enumerate(tau_values):
+        for j, mu in enumerate(mu_values):
+            # Find the corresponding result for (tau, mu)
+            for res in results:
+                if res["tau"] == tau and res["mu"] == mu:
+                    cluster_matrix[j, i] = res["num_clusters"]
+                    break
+
+    # Create heatmap
+    plt.figure(figsize=(10, 8))  # Adjust figure size as needed
+    sns.heatmap(cluster_matrix,
+                annot=True,  # Show cluster counts in cells
+                cmap="viridis",  # Choose a colormap
+                xticklabels=tau_values,
+                yticklabels=mu_values)
+    plt.xlabel("tau")
+    plt.ylabel("mu")
+    plt.title("Number of Clusters for Different tau and mu Values")
+    plt.show()
 
     # Convert results to a DataFrame for easy analysis
     return pd.DataFrame(results)

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import itertools
 import seaborn as sns
 import pandas as pd
+import networkx as nx
 
 CONFIG = {
     "N": 100,               # Number of agents
@@ -14,13 +15,15 @@ CONFIG = {
     "threshold": 0.1,        # Proximity of opinions to count to the same cluster [we agreed on 0.1]
 
     # Calculation methode dependent parameters
-    "mode": "sweep",        # "sweep" for parameter sweep, "single" for a single simulation
+    "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation
     # If mode = single
     "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
     "mu": 0.5,              # Adjustment parameter for opinion change [0<x<=0.5]
     # If mode = sweep
     "tau_values": [0.1, 0.2, 0.3, 0.4, 0.5],  # Tau values for sweep
-    "mu_values": [0.1, 0.2, 0.3, 0.4, 0.5]    # Mu values for sweep
+    "mu_values": [0.1, 0.2, 0.3, 0.4, 0.5],    # Mu values for sweep
+    "dynamic_network": False,     # Use dynamic networks for the agents [True / False], else use static network
+    "update_steps": 10      # How many steps between every update of the dynamic network if used.
 }
 
 class OpinionAgent(mesa.Agent):
@@ -43,7 +46,7 @@ class OpinionAgent(mesa.Agent):
 
 class OpinionDynamicsModel(mesa.Model):
 
-    def __init__(self, N=CONFIG["N"], tau=CONFIG["tau"], mu=CONFIG["mu"], seed=CONFIG["seed"]):
+    def __init__(self, N=CONFIG["N"], tau=CONFIG["tau"], mu=CONFIG["mu"], seed=CONFIG["seed"], dynamic_network=CONFIG["dynamic_network"]):
         """
         Create a new model with a given number of agents
         Parameters:
@@ -59,6 +62,7 @@ class OpinionDynamicsModel(mesa.Model):
         self.mu = mu
         self.random = Random(seed)
         self.current_step = 0    # Step counter
+        self.dynamic_network = dynamic_network
         
         # Track opinion history for analysis and graphical display
         self.opinion_history = []
@@ -67,6 +71,9 @@ class OpinionDynamicsModel(mesa.Model):
         for i in range(self.num_agents):
             agent = OpinionAgent(unique_id=i, model=self)
             self.agents.add(agent)       # Adds agents to the list
+            
+        # Create a static social network
+        self.network = nx.erdos_renyi_graph(n=self.num_agents, p=0.1, seed=seed)
         
         # Datacollector for tracking model-level data
         self.datacollector = mesa.DataCollector(
@@ -75,6 +82,29 @@ class OpinionDynamicsModel(mesa.Model):
                 "NumClusters": self.count_clusters
             }
         )
+   
+    def update_network(self):
+        """
+        Update the network dynamically. Example: remove/add edges based on opinion similarity.
+        """
+        new_edges = []
+        removed_edges = []
+
+        for node1, node2 in list(self.network.edges):
+            # Remove edges if opinions are too different
+            if abs(self.agents[node1].opinion - self.agents[node2].opinion) > self.tau:
+                removed_edges.append((node1, node2))
+
+        # Add new edges based on similarity
+        for node1 in range(self.num_agents):
+            for node2 in range(node1 + 1, self.num_agents):
+                if node2 not in self.network[node1]:
+                    if abs(self.agents[node1].opinion - self.agents[node2].opinion) <= self.tau:
+                        new_edges.append((node1, node2))
+
+        # Apply changes to the network
+        self.network.remove_edges_from(removed_edges)
+        self.network.add_edges_from(new_edges)
     
     def count_clusters(self, threshold=CONFIG["threshold"]):
         """
@@ -102,19 +132,26 @@ class OpinionDynamicsModel(mesa.Model):
         Advance the model by one step.
         """
         self.current_step += 1
-        # Select two random agents to interact
-        agent1, agent2 = self.random.sample(list(self.agents), 2)
 
-        # Calculate percentage of comparisons completed and display comparison message
-        #percentage_done = (self.current_step / CONFIG["steps"]) * 100
-        #print(f"{percentage_done:.0f}% ({self.current_step}/{CONFIG['steps']}): comparing agent {agent1.unique_id} with agent {agent2.unique_id}")
+        # Pick a random agent and one of its neighbors
+        agent1_id = self.random.choice(list(self.network.nodes))
+        neighbors = list(self.network.neighbors(agent1_id))
 
-        if abs(agent1.opinion - agent2.opinion) <= self.tau:
-            # Update opinions based on the interaction
-            agent1.opinion += self.mu * (agent2.opinion - agent1.opinion)
-            agent2.opinion += self.mu * (agent1.opinion - agent2.opinion)
+        if neighbors:
+            agent2_id = self.random.choice(neighbors)
+            agent1 = self.agents[agent1_id]
+            agent2 = self.agents[agent2_id]
 
-        # Collect data for this step and track opinion history
+            # If their opinions are close enough, adjust them
+            if abs(agent1.opinion - agent2.opinion) <= self.tau:
+                agent1.opinion += self.mu * (agent2.opinion - agent1.opinion)
+                agent2.opinion += self.mu * (agent1.opinion - agent2.opinion)
+
+        # Update the network dynamically if enabled
+        if self.dynamic_network and self.current_step % CONFIG["update_steps"] == 0:
+            self.update_network()
+
+        # Collect data and track opinions
         self.datacollector.collect(self)
         self.opinion_history.append([agent.opinion for agent in self.agents])
     
@@ -233,7 +270,7 @@ def single_simulation(tau, mu, steps=CONFIG["steps"], N=CONFIG["N"], seed=CONFIG
     Returns: The model instance after the simulation
     """
     print(f"Running single simulation for tau={tau}, mu={mu}")
-    model = OpinionDynamicsModel(N=N, tau=tau, mu=mu, seed=seed)
+    model = OpinionDynamicsModel(N=N, tau=tau, mu=mu, seed=seed, dynamic_network=CONFIG["dynamic_network"])
     model.run_simulation(steps=steps)
     return model
 

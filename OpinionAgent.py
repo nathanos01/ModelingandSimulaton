@@ -1,3 +1,16 @@
+#################################################################################
+#
+# !!! IMPORTANT INFORMATION !!!
+#
+# Before executing the code, the necessary libraries need to be installed.
+# All the necessary libraries can be installed by executing this code:
+# pip install mesa matplotlib numpy seaborn pandas networkx scipy
+#
+# The simulation needs a lot of computing power, if the network visualisation (vis_network) is active.
+#
+#################################################################################
+
+
 import os
 import numpy as np
 from random import Random
@@ -18,12 +31,16 @@ CONFIG = {
     "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation
     # If mode = single
     "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
-    "mu": 0.5,              # Adjustment parameter for opinion change [0<x<=0.5]
+    "mu": 0.25,              # Adjustment parameter for opinion change [0<x<=0.5]
     # If mode = sweep
     "tau_values": [0.1, 0.2, 0.3, 0.4, 0.5],  # Tau values for sweep
     "mu_values": [0.1, 0.2, 0.3, 0.4, 0.5],    # Mu values for sweep
-    "dynamic_network": False,     # Use dynamic networks for the agents [True / False], else use static network
-    "update_steps": 10      # How many steps between every update of the dynamic network if used.
+    # Network configurations
+    "dynamic_network": True,     # Use dynamic networks for the agents [True / False], else use static network
+    "update_steps": 20,      # How many steps between every update of the dynamic network if used.
+    "vis_steps": 500,       # Steps between network visualizations
+    "vis_network": True,   # Should the network steps be visualized [True/False]
+    "network_prob": 0.005    # Probability for connections in the network [0<x<=1]
 }
 
 class OpinionAgent(mesa.Agent):
@@ -73,7 +90,7 @@ class OpinionDynamicsModel(mesa.Model):
             self.agents.add(agent)       # Adds agents to the list
             
         # Create a static social network
-        self.network = nx.erdos_renyi_graph(n=self.num_agents, p=0.1, seed=seed)
+        self.network = nx.erdos_renyi_graph(n=self.num_agents, p=CONFIG["network_prob"], seed=seed)
         
         # Datacollector for tracking model-level data
         self.datacollector = mesa.DataCollector(
@@ -105,6 +122,8 @@ class OpinionDynamicsModel(mesa.Model):
         # Apply changes to the network
         self.network.remove_edges_from(removed_edges)
         self.network.add_edges_from(new_edges)
+        
+        print(f"Network update at step {self.current_step}")
     
     def count_clusters(self, threshold=CONFIG["threshold"]):
         """
@@ -126,6 +145,44 @@ class OpinionDynamicsModel(mesa.Model):
                 if i != j and abs(base_opinion - other_opinion) < threshold:
                     assigned.add(j)
         return clusters
+    
+    def display_network(self, title="Opinion Network"):
+        """
+        Visualize the network with node colors based on opinions.
+        """
+        plt.figure(figsize=(10, 10))
+
+        # Get opinions for color mapping
+        opinions = [agent.opinion for agent in self.agents]
+        node_colors = [(op + 1) / 2 for op in opinions]  # Normalize opinions (-1 to 1) to range (0 to 1)
+
+        # Create a plot with specific axes
+        ax = plt.gca()  # Get the current axis
+
+        # Draw the network
+        pos = nx.spring_layout(self.network, seed=42)  # Spring layout for better visualization
+        nx.draw(
+            self.network,
+            pos,
+            node_color=node_colors,
+            cmap=plt.cm.viridis,
+            with_labels=False,
+            node_size=100,
+            edge_color="gray",
+            alpha=0.7,
+            ax=ax  # Specify the axes
+        )
+
+        # Add color bar to show opinion scale
+        sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=plt.Normalize(vmin=-1, vmax=1))
+        sm.set_array(opinions)
+        cbar = plt.colorbar(sm, ax=ax, shrink=0.8)  # Explicitly associate the color bar with the axis
+        cbar.set_label("Opinion")
+        plt.title(title)
+        
+        # Display the plot without blocking the simulation
+        plt.pause(0.1)  # Pause for a brief moment to allow the plot to render
+
 
     def step(self):
         """
@@ -150,6 +207,11 @@ class OpinionDynamicsModel(mesa.Model):
         # Update the network dynamically if enabled
         if self.dynamic_network and self.current_step % CONFIG["update_steps"] == 0:
             self.update_network()
+        
+        if CONFIG["vis_network"] == True:
+            # Visualize the network every X steps
+            if self.current_step % CONFIG["vis_steps"] == 0:
+                self.display_network(title=f"Network at Step {self.current_step}")
 
         # Collect data and track opinions
         self.datacollector.collect(self)
@@ -203,7 +265,6 @@ def plot_results(model):
 def parameter_sweep(tau_values, mu_values, steps=CONFIG["steps"], N=CONFIG["N"], seed=CONFIG["seed"]):
     """
     Perform a parameter sweep over tau and mu values to analyze their impact on clustering.
-    Returns: A DataFrame containing the results of the parameter sweep
     """
     results = []
 
@@ -271,7 +332,11 @@ def single_simulation(tau, mu, steps=CONFIG["steps"], N=CONFIG["N"], seed=CONFIG
     """
     print(f"Running single simulation for tau={tau}, mu={mu}")
     model = OpinionDynamicsModel(N=N, tau=tau, mu=mu, seed=seed, dynamic_network=CONFIG["dynamic_network"])
+    if CONFIG["vis_network"] == True:
+        model.display_network(title="Initial Network")
     model.run_simulation(steps=steps)
+    if CONFIG["vis_network"] == True:
+        model.display_network(title="Final Network")
     return model
 
 def main():

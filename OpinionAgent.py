@@ -10,7 +10,6 @@
 #
 #################################################################################
 
-
 import os
 import numpy as np
 from random import Random
@@ -31,14 +30,14 @@ CONFIG = {
     "mode": "single",        # "sweep" for parameter sweep, "single" for a single simulation
     # If mode = single
     "tau": 0.3,             # Threshold for opinion difference to interact [x>0]
-    "mu": 0.25,              # Adjustment parameter for opinion change [0<x<=0.5]
+    "mu": 0.1,              # Adjustment parameter for opinion change [0<x<=0.5]
     # If mode = sweep
     "tau_values": [0.1, 0.2, 0.3, 0.4, 0.5],  # Tau values for sweep
     "mu_values": [0.1, 0.2, 0.3, 0.4, 0.5],    # Mu values for sweep
     # Network configurations
     "dynamic_network": True,     # Use dynamic networks for the agents [True / False], else use static network
     "update_steps": 20,      # How many steps between every update of the dynamic network if used.
-    "vis_steps": 500,       # Steps between network visualizations
+    "vis_steps": 1000,       # Steps between network visualizations
     "vis_network": True,   # Should the network steps be visualized [True/False]
     "network_prob": 0.005    # Probability for connections in the network [0<x<=1]
 }
